@@ -17,7 +17,7 @@ public class Game {
     }
 
     public void start() {
-        LOG.info("start()");
+        LOG.debug("start()");
 
         Department d = new Department("chimie");
         this.storage.saveObject(d);

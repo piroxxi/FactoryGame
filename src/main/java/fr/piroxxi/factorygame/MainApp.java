@@ -25,9 +25,11 @@ public class MainApp implements WebApplicationInitializer {
         // Spring MVC front controller
         ServletRegistration.Dynamic servlet = servletContext.addServlet("dispatcher", new DispatcherServlet(context));
         servlet.addMapping("/");
+        servlet.addMapping("/css");
+        servlet.addMapping("/js");
         servlet.setLoadOnStartup(1);
 
-        LOG.info("\n---------------------------------------\n>> STARTING GAME :\n\n\n");
+        LOG.debug("\n---------------------------------------\n>> STARTING GAME :\n\n\n");
         Game game = context.getBean(Game.class);
         game.start();
     }

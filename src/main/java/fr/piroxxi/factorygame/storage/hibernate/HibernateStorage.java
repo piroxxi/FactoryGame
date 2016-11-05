@@ -17,7 +17,7 @@ public class HibernateStorage implements Storage {
     }
 
     public void saveObject(Object object) {
-        LOG.info("saveObject()");
+        LOG.debug("saveObject()");
         Session session = this.factory.openSession();
         session.beginTransaction();
         session.save(object);
@@ -26,7 +26,7 @@ public class HibernateStorage implements Storage {
     }
 
     public Object loadObject(Integer id) {
-        LOG.info("loadObject(" + id + ")");
+        LOG.debug("loadObject(" + id + ")");
         return null;
     }
 }
