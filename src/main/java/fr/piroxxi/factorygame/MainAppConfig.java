@@ -4,15 +4,34 @@ import fr.piroxxi.factorygame.core.Game;
 import fr.piroxxi.factorygame.storage.hibernate.HibernateStorage;
 import fr.piroxxi.factorygame.storage.Storage;
 import org.hibernate.SessionFactory;
-import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
-import org.hibernate.service.ServiceRegistry;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.web.servlet.ViewResolver;
+import org.springframework.web.servlet.config.annotation.EnableWebMvc;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter;
+import org.thymeleaf.TemplateEngine;
+import org.thymeleaf.spring4.SpringTemplateEngine;
+import org.thymeleaf.spring4.templateresolver.SpringResourceTemplateResolver;
+import org.thymeleaf.spring4.view.ThymeleafViewResolver;
+import org.thymeleaf.templatemode.TemplateMode;
+import org.thymeleaf.templateresolver.ITemplateResolver;
 
 @Configuration
+@EnableWebMvc
 @ComponentScan(basePackages = "fr.piroxxi.factorygame")
-public class MainAppConfig {
+public class MainAppConfig extends WebMvcConfigurerAdapter {
+    private static Logger LOG = LoggerFactory.getLogger(MainAppConfig.class);
+    private static final String UTF8 = "UTF-8";
+
+    @Autowired
+    private ApplicationContext applicationContext;
+
     @Bean
     public Storage storage() {
         return new HibernateStorage(getSessionFactory());
@@ -20,17 +39,6 @@ public class MainAppConfig {
 
     @Bean
     public SessionFactory getSessionFactory() {
-//        try {
-//            org.hibernate.cfg.Configuration configuration;
-//            configuration = new org.hibernate.cfg.Configuration().configure("/hibernate.cfg.xml");
-//            StandardServiceRegistryBuilder serviceRegistryBuilder = new StandardServiceRegistryBuilder();
-//            serviceRegistryBuilder.applySettings(configuration.getProperties());
-//            ServiceRegistry serviceRegistry = serviceRegistryBuilder.build();
-//            return configuration.buildSessionFactory(serviceRegistry);
-//        } catch (Throwable ex) {
-//            System.err.println("Initial SessionFactory creation failed." + ex);
-//            throw new ExceptionInInitializerError(ex);
-//        }
         try {
             // Create the SessionFactory from hibernate.cfg.xml
             return new org.hibernate.cfg.Configuration().configure().buildSessionFactory();
@@ -44,5 +52,34 @@ public class MainAppConfig {
     @Bean
     public Game game() {
         return new Game(storage());
+    }
+
+
+    /*
+     * ********************************************************************************************************
+     * * https://github.com/jmiguelsamper/thymeleaf3-spring-helloworld/blob/master/src/main/java/com/thymeleafexamples/thymeleaf3/config/ThymeleafConfig.java
+     * ********************************************************************************************************
+     */
+
+    @Bean
+    public ViewResolver viewResolver() {
+        ThymeleafViewResolver resolver = new ThymeleafViewResolver();
+        resolver.setTemplateEngine(templateEngine());
+        resolver.setCharacterEncoding(UTF8);
+        return resolver;
+    }
+
+    private TemplateEngine templateEngine() {
+        SpringTemplateEngine engine = new SpringTemplateEngine();
+        engine.setTemplateResolver(templateResolver());
+        return engine;
+    }
+
+    private ITemplateResolver templateResolver() {
+        SpringResourceTemplateResolver resolver = new SpringResourceTemplateResolver();
+        resolver.setApplicationContext(applicationContext);
+        resolver.setPrefix("/WEB-INF/templates/");
+        resolver.setTemplateMode(TemplateMode.HTML);
+        return resolver;
     }
 }

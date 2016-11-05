@@ -7,12 +7,13 @@
     <groupId>factorygame</groupId>
     <artifactId>fr.piroxxi.factorygame</artifactId>
     <version>1.0-SNAPSHOT</version>
-
+    <packaging>war</packaging>
 
     <properties>
         <slf4j.version>1.7.12</slf4j.version>
         <log4j.version>2.3</log4j.version>
         <spring.version>4.1.6.RELEASE</spring.version>
+        <thymeleaf.version>3.0.2.RELEASE</thymeleaf.version>
     </properties>
 
 
@@ -51,6 +52,14 @@
             <version>${log4j.version}</version>
         </dependency>
 
+        <!-- Provided dependencies -->
+        <dependency>
+            <groupId>javax</groupId>
+            <artifactId>javaee-web-api</artifactId>
+            <version>7.0</version>
+            <scope>provided</scope>
+        </dependency>
+
         <!-- spring dependencies -->
         <dependency>
             <groupId>org.springframework</groupId>
@@ -79,6 +88,17 @@
             <version>4.3.3.RELEASE</version>
         </dependency>
 
+        <dependency>
+            <groupId>org.thymeleaf</groupId>
+            <artifactId>thymeleaf</artifactId>
+            <version>${thymeleaf.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.thymeleaf</groupId>
+            <artifactId>thymeleaf-spring4</artifactId>
+            <version>${thymeleaf.version}</version>
+        </dependency>
+
 
         <!-- Storage -->
         <dependency>
@@ -99,4 +119,35 @@
         </dependency>
 
     </dependencies>
+
+    <build>
+        <finalName>${project.artifactId}</finalName>
+        <plugins>
+            <!--<plugin>-->
+            <!--<artifactId>maven-war-plugin</artifactId>-->
+            <!--<version>2.3</version>-->
+            <!--</plugin>-->
+            <!--<plugin>-->
+            <!--<artifactId>maven-compiler-plugin</artifactId>-->
+            <!--<version>3.1</version>-->
+            <!--<configuration>-->
+            <!--<source>1.7</source>-->
+            <!--<target>1.7</target>-->
+            <!--</configuration>-->
+            <!--</plugin>-->
+
+            <!-- Allowing to run the project with "mvn jetty:run" -->
+            <plugin>
+                <groupId>org.eclipse.jetty</groupId>
+                <artifactId>jetty-maven-plugin</artifactId>
+                <version>9.4.0.M0</version>
+                <configuration>
+                    <scanIntervalSeconds>10</scanIntervalSeconds>
+                    <!--<webApp>-->
+                    <!--<contextPath>/test</contextPath>-->
+                    <!--</webApp>-->
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
 </project>
