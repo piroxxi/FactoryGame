@@ -14,8 +14,9 @@ public class MainAppController {
 
     @RequestMapping(value = "/", method = RequestMethod.GET)
     public String home(Model model) {
-        LOG.info("home()");
-        model.addAttribute("name", "World");
+        int r = (int) (Math.random() * 900 + 100);
+        LOG.info("home(" + r + ")");
+        model.addAttribute("name", "World " + r);
         return "index.html";
     }
 
