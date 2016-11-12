@@ -1,5 +1,7 @@
 package fr.piroxxi.factorygame.storage;
 
+import java.util.List;
+
 public interface Storage {
     /**
      */
@@ -8,4 +10,8 @@ public interface Storage {
     /**
      */
     Object loadObject(Integer id);
+
+    /**
+     */
+    List<Object> listAllObjects(Class c);
 }
