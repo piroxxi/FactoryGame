@@ -2,11 +2,13 @@ package fr.piroxxi.factorygame;
 
 import fr.piroxxi.factorygame.core.exceptions.IllegalGameAction;
 import fr.piroxxi.factorygame.core.model.*;
+import fr.piroxxi.factorygame.event.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import fr.piroxxi.factorygame.core.GameFactory;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -23,6 +25,15 @@ public class MainAppStatic {
 
         GameFactory factory = context.getBean(GameFactory.class);
         Game game = factory.createGame(6);
+        ActionEventBus gameActionEventBus = game.getActionEventBus();
+        ArrayList<ActionEvent> turnEvents = new ArrayList<>();
+        gameActionEventBus.on(ActionEvent.class, new ActionEventHandler<ActionEvent>() {
+            @Override
+            public void event(ActionEvent event) {
+                turnEvents.add(event);
+            }
+        });
+
 
         game.generateMap();
         Player p1 = new Player(game, "Raphael");
@@ -44,23 +55,22 @@ public class MainAppStatic {
             LOG.info("START OF TURN " + turn + " :");
             for (int i = 0; i < 4; i++) {
                 Player player = game.getPlayer(i);
-                LOG.info("It's player " + player.getName() + " turn.");
                 int action = (int) Math.floor(Math.random() * 6);
                 switch (action) {
                     case 0:
                     case 1: {
                         List<TileOption> buyableTiles = game.getBuyableTiles(player);
                         if (buyableTiles.size() == 0) {
-                            LOG.info("He wants to buy a tile but has no option.");
+                            LOG.debug(player.getName() + " wants to buy a tile but has no option.");
                         } else {
                             String o = buyableTiles.stream().map(op -> op.toString()).collect(Collectors.joining(""));
-                            LOG.info("He wants to buy a tile and has " + buyableTiles.size() + " options : " + o + ".");
+                            LOG.debug(player.getName() + " wants to buy a tile and has " + buyableTiles.size() + " options : " + o + ".");
                             int r = (int) Math.floor(Math.random() * buyableTiles.size());
-                            LOG.info("He picks tile number " + r + ".");
+                            LOG.debug(player.getName() + " picks tile number " + r + ".");
                             try {
                                 game.playerBuysTile(buyableTiles.get(r).getTile(), player);
                             } catch (IllegalGameAction illegalGameAction) {
-                                LOG.info(" >> ERROR : " + illegalGameAction.getMessage());
+                                LOG.debug("    ERROR : " + illegalGameAction.getMessage());
                             }
                         }
                         break;
@@ -86,17 +96,17 @@ public class MainAppStatic {
                         }
                         List<TileOption> buildableTiles = game.getBuildablesTiles(t, player);
                         if (buildableTiles.size() == 0) {
-                            LOG.info("He want's to build a " + t.getTitle() + " but has no option.");
+                            LOG.debug(player.getName() + " want's to build a " + t.getTitle() + " but has no option.");
                         } else {
                             String o = buildableTiles.stream().map(op -> op.toString()).collect(Collectors.joining(""));
-                            LOG.info("He want's to build a " + t.getTitle() + " and has " + buildableTiles.size() + " options : " + o + ".");
+                            LOG.debug(player.getName() + " want's to build a " + t.getTitle() + " and has " + buildableTiles.size() + " options : " + o + ".");
                             int r = (int) Math.floor(Math.random() * buildableTiles.size());
 
-                            LOG.info("He picks tile number " + r + ".");
+                            LOG.debug(player.getName() + " picks tile number " + r + ".");
                             try {
                                 game.playerBuildsTile(t, buildableTiles.get(r).getTile(), player);
                             } catch (IllegalGameAction illegalGameAction) {
-                                LOG.info(" >> ERROR : " + illegalGameAction.getMessage());
+                                LOG.debug("    ERROR : " + illegalGameAction.getMessage());
                             }
                         }
                         break;
@@ -104,26 +114,34 @@ public class MainAppStatic {
                     case 5: {
                         List<TileOption> upgradableTiles = game.getUpgradableTiles(TileType.factory, player);
                         if (upgradableTiles.size() == 0) {
-                            LOG.info("He wants to upgrade his factories but has no option.");
+                            LOG.debug(player.getName() + " wants to upgrade his factories but has no option.");
                         } else {
                             String o = upgradableTiles.stream().map(op -> op.toString()).collect(Collectors.joining(""));
-                            LOG.info("He wants to upgrade his factories and has " + upgradableTiles.size() + " options : " + o + ".");
+                            LOG.debug(player.getName() + " wants to upgrade his factories and has " + upgradableTiles.size() + " options : " + o + ".");
                             int r = (int) Math.floor(Math.random() * upgradableTiles.size());
-                            LOG.info("He picks tile number " + r + ".");
+                            LOG.debug(player.getName() + " picks tile number " + r + ".");
                             try {
                                 game.playerUpgradesTile(TileType.factory, upgradableTiles.get(r).getTile(), player);
                             } catch (IllegalGameAction illegalGameAction) {
-                                LOG.info(" >> ERROR : " + illegalGameAction.getMessage());
+                                LOG.debug("    ERROR : " + illegalGameAction.getMessage());
                             }
                         }
                         break;
                     }
                     default:
-                        LOG.info("He does nothing.");
+                        LOG.info(player.getName() + " does nothing.");
                 }
             } // all players has played
-            game.nextTurn();
+
+            LOG.debug("COMPUTING NEXT TURN !");
             game.info();
+            game.nextTurn();
+
+            LOG.debug("END OF TURN ! During this turn the following happended :");
+            gameActionEventBus.emptyQueue();
+            turnEvents.stream().forEach(e -> LOG.info("         " + e.getMessage()));
+            turnEvents.clear();
+
             turn++;
         }
         LOG.info("Game has ended. Map is full !");
@@ -132,7 +150,9 @@ public class MainAppStatic {
             LOG.info(" > player " + p.getName() + " has " + game.getPlayerTiles(p).size() + " tiles.");
         }
 
-        Thread.sleep(125);
+        gameActionEventBus.emptyQueue();
+
+        Thread.sleep(250);
         context.close();
     }
 }

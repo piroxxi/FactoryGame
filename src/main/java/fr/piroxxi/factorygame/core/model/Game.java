@@ -1,6 +1,8 @@
 package fr.piroxxi.factorygame.core.model;
 
 import fr.piroxxi.factorygame.core.exceptions.*;
+import fr.piroxxi.factorygame.event.*;
+import fr.piroxxi.factorygame.event.events.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,7 +33,7 @@ public class Game {
 
     /* Prices are defined here */
     private static final int TILE_PRICE = 250;
-    private static final double TILE_PRICE_PROGRESSION_INDICE = 0.08;
+    private static final double TILE_PRICE_PROGRESSION_INDICE = 0.14;
     private static final Map<TileType, Integer> BUILDING_PRICES = new HashMap<>();
 
     static {
@@ -41,6 +43,9 @@ public class Game {
         BUILDING_PRICES.put(TileType.store, 800);
         BUILDING_PRICES.put(TileType.warehouse, 750);
     }
+
+    @Transient
+    private ActionEventBus actionEventBus;
 
     public Game() {
     }
@@ -53,6 +58,14 @@ public class Game {
     public Game(int size) {
         this.size = size;
         this.players = new ArrayList<>();
+    }
+
+    public void setActionEventBus(ActionEventBus actionEventBus) {
+        this.actionEventBus = actionEventBus;
+    }
+
+    public ActionEventBus getActionEventBus() {
+        return actionEventBus;
     }
 
     public Tile getTile(int x, int y) {
@@ -79,6 +92,7 @@ public class Game {
     }
 
     public void addPlayer(Player p) {
+        this.actionEventBus.notify(new ActionPlayerJoined(p));
         this.players.add(p);
         switch (this.players.size()) {
             case 1:
@@ -143,6 +157,7 @@ public class Game {
 
         player.pay(price);
         tile.setOwner(player);
+        this.actionEventBus.notify(new ActionBuyTile(tile, player, price));
     }
 
     public void playerBuildsTile(TileType type, Tile tile, Player player) throws IllegalGameAction {
@@ -157,6 +172,7 @@ public class Game {
 
         player.pay(BUILDING_PRICES.get(type));
         tile.setType(type);
+        this.actionEventBus.notify(new ActionBuild(tile, player, type, BUILDING_PRICES.get(type)));
     }
 
     public void playerUpgradesTile(TileType type, Tile tile, Player player) throws IllegalGameAction {
@@ -181,6 +197,7 @@ public class Game {
 
         player.pay(BUILDING_PRICES.get(t));
         tile.setType(t);
+        this.actionEventBus.notify(new ActionUpgrade(tile, player, type, t, BUILDING_PRICES.get(t)));
     }
 
     /* *********** */
@@ -231,20 +248,28 @@ public class Game {
     /* *********** */
 
     public void nextTurn() {
-        LOG.info("Calculating next turn initial variables");
+        LOG.debug("Calculating next turn initial variables");
         for (Player p : this.players) {
             List<TileOption> factories = getPlayerTiles(p).stream()
                     .filter(t -> t.getTile().getType() == TileType.factory)
                     .collect(Collectors.toList());
             int a = factories.size() * 160;
+            if (a > 0) {
+                p.receive(a);
+                this.actionEventBus.notify(new ActionPlayerReceivedMoney(p, a, "production from " + factories.size() + " factories"));
+            }
+
             List<TileOption> bigFactories = getPlayerTiles(p).stream()
                     .filter(t -> t.getTile().getType() == TileType.bigFactory)
                     .collect(Collectors.toList());
             int b = bigFactories.size() * 380;
-            LOG.info("    Player " + p.getName() + " earns " + a + "$ thanks to his " + factories.size() + " factories" +
+            if (b > 0) {
+                p.receive(b);
+                this.actionEventBus.notify(new ActionPlayerReceivedMoney(p, b, "production from " + bigFactories.size() + " big factories"));
+            }
+
+            LOG.debug("    Player " + p.getName() + " earns " + a + "$ thanks to his " + factories.size() + " factories" +
                     " and " + b + "$ thanks to his " + bigFactories.size() + " big factories.");
-            p.receive(a);
-            p.receive(b);
         }
     }
 
@@ -264,13 +289,13 @@ public class Game {
                     .collect(Collectors.joining(", "));
             LOG.info("There is currently " + this.players.size() + " player(s) : " + pp);
         }
-        LOG.info("Current board state :");
+        LOG.debug("Current board state :");
         for (int x = 0; x < this.size; x++) {
             String line = "";
             for (int y = 0; y < this.size; y++) {
                 line += this.map.get(x + ":" + y).toString();
             }
-            LOG.info(line);
+            LOG.debug(line);
         }
     }
 }

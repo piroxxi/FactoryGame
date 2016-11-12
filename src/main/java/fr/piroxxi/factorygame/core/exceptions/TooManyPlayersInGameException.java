@@ -1,4 +1,4 @@
-package fr.piroxxi.factorygame.core.model;
+package fr.piroxxi.factorygame.core.exceptions;
 
 public class TooManyPlayersInGameException extends RuntimeException {
 }
